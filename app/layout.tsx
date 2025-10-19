@@ -1,4 +1,4 @@
-import { type Metadata } from 'next'
+import {type Metadata} from 'next'
 import {
     ClerkProvider,
     SignInButton,
@@ -7,7 +7,7 @@ import {
     SignedOut,
     UserButton,
 } from '@clerk/nextjs'
-import { Geist, Geist_Mono } from 'next/font/google'
+import {Geist, Geist_Mono} from 'next/font/google'
 import './globals.css'
 
 const geistSans = Geist({
@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-    title: "Sortify - Smart Recycling Map",
+    title: "Sortex - Smart Recycling Map",
     description: "Find recycling points, earn eco points, and make a difference",
     generator: "v0.app",
 }

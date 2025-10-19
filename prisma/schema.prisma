@@ -1,0 +1,30 @@
+// schema.prisma
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id
+  email     String   @unique
+  name      String?
+  uploads   Upload[] @relation("UserUploads")
+  points    Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Upload {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation("UserUploads", fields: [userId], references: [id], onDelete: Cascade)
+  fileUrl    String
+  fileName   String
+  fileType   String
+  fileSize   Int
+  uploadedAt DateTime @default(now())
+}

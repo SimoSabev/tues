@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
@@ -8,10 +8,21 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Recycle, NavigationIcon } from "lucide-react"
 
-const createCustomIcon = (color: string) => {
-  return new L.DivIcon({
-    className: "custom-marker",
-    html: `
+const binTypeColors: Record<string, string> = {
+    plastic: "#f59e0b",
+    glass: "#10b981",
+    paper: "#3b82f6",
+    metal: "#6b7280",
+    ewaste: "#ef4444",
+    textile: "#a855f7",
+    organic: "#84cc16",
+    hazardous: "#dc2626",
+}
+
+const createCustomIcon = (color: string) =>
+    new L.DivIcon({
+        className: "custom-marker",
+        html: `
       <div style="
         width: 40px;
         height: 40px;
@@ -33,14 +44,13 @@ const createCustomIcon = (color: string) => {
         </svg>
       </div>
     `,
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-  })
-}
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
+    })
 
 const userLocationIcon = new L.DivIcon({
-  className: "user-location-marker",
-  html: `
+    className: "user-location-marker",
+    html: `
     <div style="position: relative;">
       <div style="
         width: 24px;
@@ -64,143 +74,150 @@ const userLocationIcon = new L.DivIcon({
       "></div>
     </div>
   `,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
 })
 
-const binTypeColors: Record<string, string> = {
-  plastic: "#eab308",
-  glass: "#22c55e",
-  paper: "#3b82f6",
-  metal: "#6b7280",
-  ewaste: "#ef4444",
-  textile: "#a855f7",
-}
-
 interface RecyclingBin {
-  id: number
-  name: string
-  lat: number
-  lng: number
-  type: string
-  address: string
+    id: number
+    name: string
+    lat: number
+    lng: number
+    type: string
+    address: string
 }
 
 interface RecyclingMapProps {
-  bins: RecyclingBin[]
-  userLocation: { lat: number; lng: number } | null
-  onBinSelect: (bin: RecyclingBin) => void
+    bins: RecyclingBin[]
+    userLocation: { lat: number; lng: number } | null
+    onBinSelect: (bin: RecyclingBin) => void
 }
 
 function MapController({ center }: { center: [number, number] }) {
-  const map = useMap()
-  useEffect(() => {
-    map.setView(center, 13)
-  }, [center, map])
-  return null
+    const map = useMap()
+    useEffect(() => {
+        map.setView(center, 13)
+    }, [center, map])
+    return null
 }
 
 export function RecyclingMap({ bins, userLocation, onBinSelect }: RecyclingMapProps) {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted || !userLocation) {
-    return (
-      <div className="w-full h-[600px] bg-gradient-to-br from-teal-100 to-emerald-100 rounded-lg flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-emerald-600 flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <Recycle className="w-8 h-8 text-white" />
-          </div>
-          <p className="text-emerald-900 font-medium">Loading map...</p>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="w-full h-[600px] rounded-lg overflow-hidden border-2 border-emerald-200">
-      <MapContainer
-        center={[userLocation.lat, userLocation.lng]}
-        zoom={13}
-        style={{ height: "100%", width: "100%" }}
-        scrollWheelZoom={true}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        <MapController center={[userLocation.lat, userLocation.lng]} />
-
-        {/* User location marker */}
-        <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon}>
-          <Popup>
-            <div className="text-center">
-              <p className="font-semibold text-emerald-900">Your Location</p>
-              <p className="text-sm text-emerald-600">You are here</p>
+    if (!userLocation) {
+        return (
+            <div className="w-full h-[600px] bg-gradient-to-br from-teal-100 to-emerald-100 rounded-lg flex items-center justify-center">
+                <div className="text-center">
+                    <div className="w-16 h-16 rounded-full bg-emerald-600 flex items-center justify-center mx-auto mb-4 animate-pulse">
+                        <Recycle className="w-8 h-8 text-white" />
+                    </div>
+                    <p className="text-emerald-900 font-medium">Loading map...</p>
+                </div>
             </div>
-          </Popup>
-        </Marker>
+        )
+    }
 
-        {/* Recycling bin markers */}
-        {bins.map((bin) => (
-          <Marker
-            key={bin.id}
-            position={[bin.lat, bin.lng]}
-            icon={createCustomIcon(binTypeColors[bin.type])}
-            eventHandlers={{
-              click: () => onBinSelect(bin),
-            }}
-          >
-            <Popup>
-              <div className="min-w-[200px]">
-                <h3 className="font-semibold text-emerald-900 mb-2">{bin.name}</h3>
-                <p className="text-sm text-emerald-600 mb-2">{bin.address}</p>
-                <Badge
-                  style={{
-                    backgroundColor: binTypeColors[bin.type],
-                    color: "white",
-                  }}
-                >
-                  {bin.type.charAt(0).toUpperCase() + bin.type.slice(1)}
-                </Badge>
-                <Button
-                  size="sm"
-                  className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white"
-                  onClick={() => {
-                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${bin.lat},${bin.lng}`, "_blank")
-                  }}
-                >
-                  <NavigationIcon className="w-3 h-3 mr-2" />
-                  Get Directions
-                </Button>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+    useEffect(() => {
+        const existingMap = document.querySelector(".leaflet-container")
+        if (existingMap && (existingMap as any)._leaflet_id) {
+            try {
+                (existingMap as any)._leaflet_id = null
+            } catch (e) {
+                console.warn("Failed to reset map ID", e)
+            }
+        }
+    }, [])
 
-      <style jsx global>{`
-        @keyframes pulse {
-          0%,
-          100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
+    useEffect(() => {
+        return () => {
+            const container = document.querySelector(".leaflet-container")
+            if (container && (container as any)._leaflet_id) {
+                (container as any)._leaflet_id = null
+            }
         }
-        @keyframes ping {
-          75%,
-          100% {
-            transform: translate(-50%, -50%) scale(2);
-            opacity: 0;
-          }
-        }
-      `}</style>
-    </div>
-  )
+    }, [])
+
+
+    return (
+        <div className="w-full h-[600px] rounded-lg overflow-hidden border-2 border-emerald-200">
+            <MapContainer
+                key={`${userLocation.lat}-${userLocation.lng}`}  // ✅ important
+                center={[userLocation.lat, userLocation.lng]}
+                zoom={13}
+                style={{ height: "100%", width: "100%" }}
+                scrollWheelZoom
+            >
+            <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+
+                <MapController center={[userLocation.lat, userLocation.lng]} />
+
+                {/* User location marker */}
+                <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon}>
+                    <Popup>
+                        <div className="text-center">
+                            <p className="font-semibold text-emerald-900">Your Location</p>
+                            <p className="text-sm text-emerald-600">You are here</p>
+                        </div>
+                    </Popup>
+                </Marker>
+
+                {/* Recycling bin markers */}
+                {bins.map((bin) => (
+                    <Marker
+                        key={bin.id}
+                        position={[bin.lat, bin.lng]}
+                        icon={createCustomIcon(binTypeColors[bin.type])}
+                        eventHandlers={{
+                            click: () => onBinSelect(bin),
+                        }}
+                    >
+                        <Popup>
+                            <div className="min-w-[200px]">
+                                <h3 className="font-semibold text-emerald-900 mb-2">{bin.name}</h3>
+                                <p className="text-sm text-emerald-600 mb-2">{bin.address}</p>
+                                <Badge
+                                    style={{
+                                        backgroundColor: binTypeColors[bin.type],
+                                        color: "white",
+                                    }}
+                                >
+                                    {bin.type.charAt(0).toUpperCase() + bin.type.slice(1)}
+                                </Badge>
+                                <Button
+                                    size="sm"
+                                    className="w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white"
+                                    onClick={() => {
+                                        window.open(`https://www.google.com/maps/dir/?api=1&destination=${bin.lat},${bin.lng}`, "_blank")
+                                    }}
+                                >
+                                    <NavigationIcon className="w-3 h-3 mr-2" />
+                                    Get Directions
+                                </Button>
+                            </div>
+                        </Popup>
+                    </Marker>
+                ))}
+            </MapContainer>
+
+            <style jsx global>{`
+                @keyframes pulse {
+                    0%,
+                    100% {
+                        opacity: 1;
+                    }
+                    50% {
+                        opacity: 0.5;
+                    }
+                }
+                @keyframes ping {
+                    75%,
+                    100% {
+                        transform: translate(-50%, -50%) scale(2);
+                        opacity: 0;
+                    }
+                }
+            `}</style>
+        </div>
+    )
 }

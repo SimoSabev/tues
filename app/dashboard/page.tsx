@@ -1,15 +1,33 @@
 "use client"
-
-import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Leaf, MapPin, Trophy, Upload, TrendingUp, Recycle, Award, Target, Sparkles } from "lucide-react"
 import Link from "next/link"
 import { UserButton } from "@clerk/nextjs"
+import { motion } from "framer-motion"
+import useSWR from "swr"
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
+interface DashboardData {
+    points: number
+    rank: number
+    totalItems: number
+    recentUploads: Array<{
+        id: string
+        fileName: string
+        uploadedAt: string
+    }>
+}
 
 export default function DashboardPage() {
-    const [userPoints, setUserPoints] = useState(1250)
-    const [userRank, setUserRank] = useState(12)
+    const { data, error, isLoading } = useSWR<DashboardData>("/api/dashboard", fetcher, {
+        refreshInterval: 5000, // Refresh every 5 seconds
+    })
+
+    const userPoints = data?.points ?? 1250
+    const userRank = data?.rank ?? 12
+    const totalItems = data?.totalItems ?? 47
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
@@ -18,12 +36,16 @@ export default function DashboardPage() {
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-600 flex items-center justify-center shadow-lg hover:shadow-xl transition-all hover:scale-105">
-                                <Recycle className="w-7 h-7 text-white animate-spin-slow" />
-                            </div>
+                            <motion.div
+                                className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-600 flex items-center justify-center shadow-lg"
+                                whileHover={{ scale: 1.05 }}
+                                transition={{ type: "spring", stiffness: 400 }}
+                            >
+                                <Recycle className="w-7 h-7 text-white" />
+                            </motion.div>
                             <div>
                                 <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-700 to-teal-700 bg-clip-text text-transparent">
-                                    Sortex
+                                    Sortify
                                 </h1>
                                 <p className="text-xs text-emerald-600">Recycle Smarter</p>
                             </div>
@@ -76,7 +98,12 @@ export default function DashboardPage() {
 
             {/* Main Content */}
             <main className="container mx-auto px-4 py-8">
-                <div className="mb-8">
+                <motion.div
+                    className="mb-8"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
                     <Card className="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 border-0 text-white overflow-hidden relative shadow-2xl">
                         <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-48 -mt-48 animate-pulse" />
                         <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-400/20 rounded-full blur-2xl -ml-32 -mb-32" />
@@ -89,14 +116,18 @@ export default function DashboardPage() {
                                     Eco Warrior
                                 </Badge>
                             </div>
-                            <CardTitle className="text-4xl font-bold text-white mb-2">Welcome back, John!</CardTitle>
+                            <CardTitle className="text-4xl font-bold text-white mb-2">Welcome back!</CardTitle>
                             <CardDescription className="text-emerald-50 text-lg">
                                 You're making a real difference for our planet 🌍
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="relative z-10">
                             <div className="grid md:grid-cols-3 gap-6">
-                                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-6 border border-white/30 hover:bg-white/25 transition-all hover:scale-105 shadow-lg">
+                                <motion.div
+                                    className="bg-white/20 backdrop-blur-md rounded-2xl p-6 border border-white/30 hover:bg-white/25 transition-all shadow-lg"
+                                    whileHover={{ scale: 1.05 }}
+                                    transition={{ type: "spring", stiffness: 300 }}
+                                >
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center shadow-lg">
                                             <Leaf className="w-7 h-7 text-white" />
@@ -108,10 +139,14 @@ export default function DashboardPage() {
                                     </div>
                                     <p className="text-sm text-emerald-100 mb-1">Eco Points</p>
                                     <p className="text-5xl font-bold text-white mb-2">{userPoints}</p>
-                                    <p className="text-sm text-emerald-100">+150 this week</p>
-                                </div>
+                                    <p className="text-sm text-emerald-100">Keep it up!</p>
+                                </motion.div>
 
-                                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-6 border border-white/30 hover:bg-white/25 transition-all hover:scale-105 shadow-lg">
+                                <motion.div
+                                    className="bg-white/20 backdrop-blur-md rounded-2xl p-6 border border-white/30 hover:bg-white/25 transition-all shadow-lg"
+                                    whileHover={{ scale: 1.05 }}
+                                    transition={{ type: "spring", stiffness: 300 }}
+                                >
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center shadow-lg">
                                             <Trophy className="w-7 h-7 text-white" />
@@ -124,9 +159,13 @@ export default function DashboardPage() {
                                     <p className="text-sm text-emerald-100 mb-1">Your Rank</p>
                                     <p className="text-5xl font-bold text-white mb-2">#{userRank}</p>
                                     <p className="text-sm text-emerald-100">in your city</p>
-                                </div>
+                                </motion.div>
 
-                                <div className="bg-white/20 backdrop-blur-md rounded-2xl p-6 border border-white/30 hover:bg-white/25 transition-all hover:scale-105 shadow-lg">
+                                <motion.div
+                                    className="bg-white/20 backdrop-blur-md rounded-2xl p-6 border border-white/30 hover:bg-white/25 transition-all shadow-lg"
+                                    whileHover={{ scale: 1.05 }}
+                                    transition={{ type: "spring", stiffness: 300 }}
+                                >
                                     <div className="flex items-start justify-between mb-4">
                                         <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-lg">
                                             <Recycle className="w-7 h-7 text-white" />
@@ -137,58 +176,64 @@ export default function DashboardPage() {
                                         </div>
                                     </div>
                                     <p className="text-sm text-emerald-100 mb-1">Items Recycled</p>
-                                    <p className="text-5xl font-bold text-white mb-2">47</p>
+                                    <p className="text-5xl font-bold text-white mb-2">{totalItems}</p>
                                     <p className="text-sm text-emerald-100">This month</p>
-                                </div>
+                                </motion.div>
                             </div>
                         </CardContent>
                     </Card>
-                </div>
+                </motion.div>
 
                 <div className="grid md:grid-cols-3 gap-6 mb-8">
                     <Link href="/map" className="group">
-                        <Card className="hover:shadow-2xl transition-all cursor-pointer border-2 border-transparent hover:border-emerald-400 bg-white overflow-hidden relative h-full">
-                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <CardHeader className="relative z-10">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform">
-                                    <MapPin className="w-7 h-7 text-white" />
-                                </div>
-                                <CardTitle className="text-emerald-900 text-xl mb-2">Find Recycling Points</CardTitle>
-                                <CardDescription className="text-emerald-700">
-                                    Discover nearby bins and recycling centers on the interactive map
-                                </CardDescription>
-                            </CardHeader>
-                        </Card>
+                        <motion.div whileHover={{ y: -5 }} transition={{ type: "spring", stiffness: 300 }}>
+                            <Card className="hover:shadow-2xl transition-all cursor-pointer border-2 border-transparent hover:border-emerald-400 bg-white overflow-hidden relative h-full">
+                                <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <CardHeader className="relative z-10">
+                                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform">
+                                        <MapPin className="w-7 h-7 text-white" />
+                                    </div>
+                                    <CardTitle className="text-emerald-900 text-xl mb-2">Find Recycling Points</CardTitle>
+                                    <CardDescription className="text-emerald-700">
+                                        Discover nearby bins and recycling centers on the interactive map
+                                    </CardDescription>
+                                </CardHeader>
+                            </Card>
+                        </motion.div>
                     </Link>
 
                     <Link href="/upload" className="group">
-                        <Card className="hover:shadow-2xl transition-all cursor-pointer border-2 border-transparent hover:border-teal-400 bg-white overflow-hidden relative h-full">
-                            <div className="absolute inset-0 bg-gradient-to-br from-teal-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <CardHeader className="relative z-10">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform">
-                                    <Upload className="w-7 h-7 text-white" />
-                                </div>
-                                <CardTitle className="text-emerald-900 text-xl mb-2">Upload & Earn</CardTitle>
-                                <CardDescription className="text-emerald-700">
-                                    Scan your recycling and earn points for verified contributions
-                                </CardDescription>
-                            </CardHeader>
-                        </Card>
+                        <motion.div whileHover={{ y: -5 }} transition={{ type: "spring", stiffness: 300 }}>
+                            <Card className="hover:shadow-2xl transition-all cursor-pointer border-2 border-transparent hover:border-teal-400 bg-white overflow-hidden relative h-full">
+                                <div className="absolute inset-0 bg-gradient-to-br from-teal-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <CardHeader className="relative z-10">
+                                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform">
+                                        <Upload className="w-7 h-7 text-white" />
+                                    </div>
+                                    <CardTitle className="text-emerald-900 text-xl mb-2">Upload & Earn</CardTitle>
+                                    <CardDescription className="text-emerald-700">
+                                        Scan your recycling and earn points for verified contributions
+                                    </CardDescription>
+                                </CardHeader>
+                            </Card>
+                        </motion.div>
                     </Link>
 
                     <Link href="/leaderboard" className="group">
-                        <Card className="hover:shadow-2xl transition-all cursor-pointer border-2 border-transparent hover:border-cyan-400 bg-white overflow-hidden relative h-full">
-                            <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <CardHeader className="relative z-10">
-                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform">
-                                    <Trophy className="w-7 h-7 text-white" />
-                                </div>
-                                <CardTitle className="text-emerald-900 text-xl mb-2">Leaderboard</CardTitle>
-                                <CardDescription className="text-emerald-700">
-                                    See how you rank against other eco-warriors in your community
-                                </CardDescription>
-                            </CardHeader>
-                        </Card>
+                        <motion.div whileHover={{ y: -5 }} transition={{ type: "spring", stiffness: 300 }}>
+                            <Card className="hover:shadow-2xl transition-all cursor-pointer border-2 border-transparent hover:border-cyan-400 bg-white overflow-hidden relative h-full">
+                                <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <CardHeader className="relative z-10">
+                                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform">
+                                        <Trophy className="w-7 h-7 text-white" />
+                                    </div>
+                                    <CardTitle className="text-emerald-900 text-xl mb-2">Leaderboard</CardTitle>
+                                    <CardDescription className="text-emerald-700">
+                                        See how you rank against other eco-warriors in your community
+                                    </CardDescription>
+                                </CardHeader>
+                            </Card>
+                        </motion.div>
                     </Link>
                 </div>
 
@@ -200,157 +245,56 @@ export default function DashboardPage() {
                                 <CardDescription className="text-emerald-600">Your latest recycling contributions</CardDescription>
                             </div>
                             <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-4 py-2">
-                                4 items this week
+                                {data?.recentUploads?.length ?? 0} recent items
                             </Badge>
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-3">
-                            {[
-                                {
-                                    item: "Plastic bottles",
-                                    points: 50,
-                                    time: "2 hours ago",
-                                    type: "plastic",
-                                    color: "from-yellow-400 to-orange-500",
-                                },
-                                {
-                                    item: "Cardboard boxes",
-                                    points: 30,
-                                    time: "1 day ago",
-                                    type: "paper",
-                                    color: "from-blue-400 to-indigo-500",
-                                },
-                                {
-                                    item: "Glass jars",
-                                    points: 40,
-                                    time: "2 days ago",
-                                    type: "glass",
-                                    color: "from-green-400 to-emerald-500",
-                                },
-                                {
-                                    item: "Aluminum cans",
-                                    points: 35,
-                                    time: "3 days ago",
-                                    type: "metal",
-                                    color: "from-gray-400 to-slate-500",
-                                },
-                            ].map((activity, index) => (
-                                <div
-                                    key={index}
-                                    className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-100 hover:border-emerald-300 hover:shadow-md transition-all group"
-                                >
-                                    <div className="flex items-center gap-4">
-                                        <div
-                                            className={`w-12 h-12 rounded-xl bg-gradient-to-br ${activity.color} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}
+                        {isLoading ? (
+                            <div className="text-center py-8 text-emerald-600">Loading your activity...</div>
+                        ) : data?.recentUploads && data.recentUploads.length > 0 ? (
+                            <div className="space-y-3">
+                                {data.recentUploads.map((upload, index) => {
+                                    const colors = [
+                                        "from-yellow-400 to-orange-500",
+                                        "from-blue-400 to-indigo-500",
+                                        "from-green-400 to-emerald-500",
+                                        "from-gray-400 to-slate-500",
+                                    ]
+                                    return (
+                                        <motion.div
+                                            key={upload.id}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: index * 0.1 }}
+                                            className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-100 hover:border-emerald-300 hover:shadow-md transition-all group"
                                         >
-                                            <Recycle className="w-6 h-6 text-white" />
-                                        </div>
-                                        <div>
-                                            <p className="font-semibold text-emerald-900 text-lg">{activity.item}</p>
-                                            <p className="text-sm text-emerald-600">{activity.time}</p>
-                                        </div>
-                                    </div>
-                                    <Badge className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700 px-4 py-2 text-base shadow-md">
-                                        +{activity.points} pts
-                                    </Badge>
-                                </div>
-                            ))}
-                        </div>
+                                            <div className="flex items-center gap-4">
+                                                <div
+                                                    className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colors[index % colors.length]} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}
+                                                >
+                                                    <Recycle className="w-6 h-6 text-white" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-emerald-900 text-lg">{upload.fileName}</p>
+                                                    <p className="text-sm text-emerald-600">{new Date(upload.uploadedAt).toLocaleString()}</p>
+                                                </div>
+                                            </div>
+                                            <Badge className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700 px-4 py-2 text-base shadow-md">
+                                                +10 pts
+                                            </Badge>
+                                        </motion.div>
+                                    )
+                                })}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-emerald-600">
+                                No recent activity. Start uploading to earn points!
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </main>
-
-            <style jsx global>{`
-        @keyframes spin-slow {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        .animate-spin-slow {
-          animation: spin-slow 8s linear infinite;
-        }
-      `}</style>
         </div>
     )
 }
-//
-// "use client"
-//
-// import { useEffect, useState } from "react"
-// import { useUser } from "@clerk/nextjs"
-// import { createClient } from "@supabase/supabase-js"
-// import { Recycle, Badge } from "lucide-react"
-//
-// const supabase = createClient(
-//     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-//     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-// )
-//
-// type Activity = {
-//     id: string
-//     recycle_type: string
-//     points: number
-//     file_url: string
-//     created_at: string
-// }
-//
-// export default function DashboardPage() {
-//     const { user } = useUser()
-//     const [activities, setActivities] = useState<Activity[]>([])
-//     const [totalPoints, setTotalPoints] = useState(0)
-//
-//     useEffect(() => {
-//         if (!user) return
-//         const fetchData = async () => {
-//             const { data, error } = await supabase
-//                 .from("recycling_uploads")
-//                 .select("*")
-//                 .eq("user_id", user.id)
-//                 .order("created_at", { ascending: false })
-//
-//             if (!error && data) {
-//                 setActivities(data)
-//                 const sum = data.reduce((acc, item) => acc + item.points, 0)
-//                 setTotalPoints(sum)
-//             }
-//         }
-//
-//         fetchData()
-//     }, [user])
-//
-//     return (
-//         <main className="container mx-auto px-4 py-8">
-//             <h1 className="text-3xl font-bold mb-4 text-emerald-900">Your Dashboard</h1>
-//
-//             <div className="mb-6 p-4 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-xl text-white">
-//                 <h2 className="text-2xl font-semibold">Total Points: {totalPoints}</h2>
-//                 <p className="text-emerald-100">Keep recycling to earn more 🌱</p>
-//             </div>
-//
-//             <h2 className="text-xl font-bold mb-3 text-emerald-800">Recent Activities</h2>
-//             <div className="space-y-3">
-//                 {activities.map((a) => (
-//                     <div
-//                         key={a.id}
-//                         className="flex items-center justify-between p-4 bg-emerald-50 rounded-lg border border-emerald-200"
-//                     >
-//                         <div className="flex items-center gap-4">
-//                             <Recycle className="text-emerald-600" />
-//                             <div>
-//                                 <p className="font-semibold text-emerald-900 capitalize">{a.recycle_type}</p>
-//                                 <p className="text-sm text-emerald-600">
-//                                     {new Date(a.created_at).toLocaleString()}
-//                                 </p>
-//                             </div>
-//                         </div>
-//                         <Badge className="bg-emerald-600 text-white px-3 py-1">+{a.points} pts</Badge>
-//                     </div>
-//                 ))}
-//             </div>
-//         </main>
-//     )
-// }

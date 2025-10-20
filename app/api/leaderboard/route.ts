@@ -37,12 +37,14 @@ export async function GET() {
         const leaderboard = topUsers.map((user, index) => ({
             id: user.id,
             name: profileMap[user.id]?.name || user.name || "Unknown User",
-            imageUrl: profileMap[user.id]?.imageUrl || user.imageUrl || null,
+            imageUrl: profileMap[user.id]?.imageUrl || null,
             points: user.points,
             rank: index + 1,
             recycled: user._count.uploads,
             isCurrentUser: clerkUser ? user.id === clerkUser.id : false,
         }))
+
+
 
         return NextResponse.json({ leaderboard })
     } catch (error: any) {

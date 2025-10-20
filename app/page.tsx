@@ -11,8 +11,8 @@ export default function Page() {
         <main className="min-h-screen bg-background">
             {/* Navigation */}
             <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
-                <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                <div className="max-w-7xl mx-auto px- py-4 flex items-center justify-between">
+                    <div className="flex ju items-center gap-2">
                         <div className="w-10 h-10 rounded-full flex items-center justify-center">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl">
                                 <Image

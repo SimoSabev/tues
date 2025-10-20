@@ -8,6 +8,7 @@ import Link from "next/link"
 import { UserButton } from "@clerk/nextjs"
 import { motion } from "framer-motion"
 import useSWR from "swr"
+import {AppHeader} from "@/components/app-header";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -46,7 +47,7 @@ export default function LeaderboardPage() {
     }
 
     return (
-        <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
+        <div className="min-h-screen relative overflow-hidden bg-background text-foreground">
             {/* Background blobs */}
             <div className="absolute inset-0 -z-10 overflow-hidden">
                 <div className="absolute top-[-100px] right-[-100px] w-[400px] h-[400px] rounded-full bg-emerald-200 blur-3xl opacity-40 animate-pulse" />
@@ -54,47 +55,7 @@ export default function LeaderboardPage() {
             </div>
 
             {/* Header */}
-            <header className="border-b bg-white/90 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-                <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <motion.div
-                            className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-600 flex items-center justify-center shadow-lg"
-                            whileHover={{ scale: 1.05 }}
-                        >
-                            <Recycle className="w-7 h-7 text-white" />
-                        </motion.div>
-                        <div>
-                            <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-700 to-teal-700 bg-clip-text text-transparent">
-                                Sortex
-                            </h1>
-                            <p className="text-xs text-emerald-600">Recycle Smarter</p>
-                        </div>
-                    </div>
-
-                    <nav className="hidden md:flex items-center gap-2">
-                        {[
-                            { href: "/", label: "Dashboard" },
-                            { href: "/map", label: "Map" },
-                            { href: "/upload", label: "Upload" },
-                            { href: "/leaderboard", label: "Leaderboard", active: true },
-                        ].map((link) => (
-                            <Link
-                                key={link.href}
-                                href={link.href}
-                                className={`px-4 py-2 rounded-lg transition-all font-medium ${
-                                    link.active
-                                        ? "bg-emerald-100 text-emerald-900"
-                                        : "text-emerald-700 hover:bg-emerald-50 hover:text-emerald-900"
-                                }`}
-                            >
-                                {link.label}
-                            </Link>
-                        ))}
-                    </nav>
-
-                    <UserButton />
-                </div>
-            </header>
+            <AppHeader/>
 
             <main className="container mx-auto px-4 py-10">
                 {/* Title */}
@@ -118,12 +79,12 @@ export default function LeaderboardPage() {
                         animate={{ opacity: 1, scale: 1 }}
                         className="mb-10"
                     >
-                        <Card className="bg-gradient-to-br from-emerald-600 to-teal-700 border-0 text-white shadow-2xl relative overflow-hidden">
+                        <Card className="bg-gradient-to-br from-emerald-600 to-teal-700 border-0 text-foregrund shadow-2xl relative overflow-hidden">
                             <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-10" />
                             <CardContent className="pt-6 relative">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-4">
-                                        <Avatar className="w-16 h-16 border-4 border-white shadow-lg">
+                                        <Avatar className="w-16 h-16 border-2 border-emerald-500 shadow-lg">
                                             {currentUser.imageUrl ? (
                                                 <img
                                                     src={currentUser.imageUrl}
@@ -131,21 +92,21 @@ export default function LeaderboardPage() {
                                                     className="w-full h-full object-cover rounded-full"
                                                 />
                                             ) : (
-                                                <AvatarFallback className="bg-emerald-800 text-white text-xl">
+                                                <AvatarFallback className="bg-emerald-800 text-foreground text-xl">
                                                     {getInitials(currentUser.name)}
                                                 </AvatarFallback>
                                             )}
                                         </Avatar>
                                         <div>
                                             <p className="text-sm text-emerald-100">Your Rank</p>
-                                            <p className="text-3xl font-bold text-white">
+                                            <p className="text-3xl font-bold text-emerald-100">
                                                 #{currentUser.rank}
                                             </p>
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-sm text-emerald-100">Total Points</p>
-                                        <p className="text-3xl font-bold text-white">
+                                        <p className="text-3xl font-bold text-emerald-50">
                                             {currentUser.points}
                                         </p>
                                         <div className="flex items-center gap-1 justify-end mt-1">
@@ -178,13 +139,13 @@ export default function LeaderboardPage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: index * 0.1 }}
                                 >
-                                    <Card className="border-2 border-emerald-100 hover:shadow-2xl transition-all">
+                                    <Card className="border-2 hover:shadow-2xl transition-all">
                                         <CardHeader className="text-center">
                                             <motion.div
                                                 className={`w-20 h-20 rounded-full bg-gradient-to-br ${gradients[index]} flex items-center justify-center mx-auto mb-4 shadow-lg`}
                                                 whileHover={{ scale: 1.1, rotate: 3 }}
                                             >
-                                                <Icon className="w-10 h-10 text-white" />
+                                                <Icon className="w-10 h-10 text-emerald-50" />
                                             </motion.div>
                                             <Avatar className="w-16 h-16 mx-auto border border-emerald-200 mb-3">
                                                 {user.imageUrl ? (
@@ -194,7 +155,7 @@ export default function LeaderboardPage() {
                                                         className="w-full h-full object-cover rounded-full"
                                                     />
                                                 ) : (
-                                                    <AvatarFallback className="bg-emerald-600 text-white">
+                                                    <AvatarFallback className="bg-emerald-600 text-foreground">
                                                         {getInitials(user.name)}
                                                     </AvatarFallback>
                                                 )}
@@ -214,7 +175,7 @@ export default function LeaderboardPage() {
                 )}
 
                 {/* Full Leaderboard */}
-                <Card className="bg-white shadow-xl border border-emerald-100">
+                <Card className="bg-background shadow-xl border ">
                     <CardHeader>
                         <CardTitle className="text-emerald-900 text-2xl">Full Rankings</CardTitle>
                         <CardDescription className="text-emerald-600">
@@ -240,8 +201,8 @@ export default function LeaderboardPage() {
                                         transition={{ delay: index * 0.03 }}
                                         className={`flex items-center justify-between p-4 rounded-lg transition-all ${
                                             user.isCurrentUser
-                                                ? "bg-emerald-100 border-2 border-emerald-500 shadow-md"
-                                                : "bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 hover:shadow-sm"
+                                                ? "bg-background border-2 border-emerald-500 shadow-md"
+                                                : "bg-background border border-background hover:bg-background/60 hover:shadow-sm"
                                         }`}
                                     >
                                         <div className="flex items-center gap-4 flex-1">
@@ -262,7 +223,7 @@ export default function LeaderboardPage() {
                                                         className="w-full h-full object-cover rounded-full"
                                                     />
                                                 ) : (
-                                                    <AvatarFallback className="bg-emerald-600 text-white">
+                                                    <AvatarFallback className="bg-emerald-600 text-foreground">
                                                         {getInitials(user.name)}
                                                     </AvatarFallback>
                                                 )}
@@ -271,7 +232,7 @@ export default function LeaderboardPage() {
                                                 <p className="font-semibold text-emerald-900">
                                                     {user.name}
                                                     {user.isCurrentUser && (
-                                                        <Badge className="ml-2 bg-emerald-600 text-white">
+                                                        <Badge className="ml-2 bg-emerald-600 text-emerald-100">
                                                             You
                                                         </Badge>
                                                     )}

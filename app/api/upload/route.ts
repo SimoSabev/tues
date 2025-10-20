@@ -1,86 +1,99 @@
-export const runtime = "nodejs"
-
 import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
+import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
-import { currentUser } from "@clerk/nextjs/server"
+import { createClient } from "@supabase/supabase-js"
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
-// POST: Upload file + save to Prisma + add points
-export async function POST(req: Request) {
-    try {
-        const clerkUser = await currentUser()
-        if (!clerkUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
-        const userId = clerkUser.id
-        const email = clerkUser.emailAddresses?.[0]?.emailAddress || "no-email@example.com"
-        const name = clerkUser.fullName || clerkUser.username || "Anonymous"
-
-        // Ensure user exists
-        let user = await prisma.user.findUnique({ where: { id: userId } })
-        if (!user) user = await prisma.user.create({ data: { id: userId, email, name } })
-
-        const formData = await req.formData()
-        const file = formData.get("file") as File
-        if (!file) return NextResponse.json({ error: "Missing file" }, { status: 400 })
-
-        const fileExt = file.name.split(".").pop()
-        const filePath = `${userId}/${Date.now()}.${fileExt}`
-
-        const bytes = await file.arrayBuffer()
-        const buffer = Buffer.from(bytes)
-
-        const { error: uploadError } = await supabase.storage
-            .from("recycling_uploads")
-            .upload(filePath, buffer, { contentType: file.type })
-
-        if (uploadError) throw uploadError
-
-        const { data: publicData } = supabase.storage.from("recycling_uploads").getPublicUrl(filePath)
-
-        const fileUrl = publicData.publicUrl
-
-        // Save upload in DB
-        const upload = await prisma.upload.create({
-            data: {
-                userId,
-                fileName: file.name,
-                fileUrl,
-                fileType: file.type,
-                fileSize: file.size,
-            },
-        })
-
-        // Add points
-        const updatedUser = await prisma.user.update({
-            where: { id: userId },
-            data: { points: { increment: 10 } },
-        })
-
-        return NextResponse.json({ success: true, upload, newPoints: updatedUser.points })
-    } catch (error: any) {
-        console.error("Upload error:", error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+// POINT MAP
+const POINTS = {
+    plastic: 25,
+    glass: 35,
+    paper: 20,
+    metal: 30,
+    ewaste: 50,
+    textile: 40,
 }
 
-// GET: Fetch uploads for the current user
+// ✅ GET uploads for current user
 export async function GET() {
-    try {
-        const clerkUser = await currentUser()
-        if (!clerkUser) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const { userId } = await auth()
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-        const uploads = await prisma.upload.findMany({
-            where: { userId: clerkUser.id },
-            orderBy: { uploadedAt: "desc" },
-        })
+    const uploads = await prisma.upload.findMany({
+        where: { userId },
+        orderBy: { uploadedAt: "desc" },
+        select: {
+            id: true,
+            fileName: true,
+            fileUrl: true,
+            fileType: true,
+            fileSize: true,
+            recyclingType: true,
+            pointsEarned: true,
+            uploadedAt: true,
+        },
+    })
 
-        const user = await prisma.user.findUnique({ where: { id: clerkUser.id } })
+    const totalPoints = uploads.reduce((acc, cur) => acc + (cur.pointsEarned || 0), 0)
 
-        return NextResponse.json({ uploads, points: user?.points ?? 0 })
-    } catch (error: any) {
-        console.error("Fetch uploads error:", error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ uploads, points: totalPoints })
+}
+
+// ✅ POST new upload
+export async function POST(req: Request) {
+    const { userId } = await auth()
+    if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+    const formData = await req.formData()
+    const file = formData.get("file") as File
+    const recyclingType = formData.get("recyclingType") as string
+
+    if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 })
+
+    const buffer = Buffer.from(await file.arrayBuffer())
+    const fileName = `${Date.now()}-${file.name}`
+    const filePath = `user_${userId}/${fileName}`
+
+    const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("recycling_uploads")
+        .upload(filePath, buffer, { contentType: file.type })
+
+    if (uploadError) {
+        console.error(uploadError)
+        return NextResponse.json({ error: "Upload failed" }, { status: 500 })
     }
+
+    const { data: publicUrlData } = supabase.storage.from("recycling_uploads").getPublicUrl(filePath)
+
+    const pointsEarned = POINTS[recyclingType as keyof typeof POINTS] || 10
+
+    await prisma.user.upsert({
+        where: { id: userId },
+        update: {},
+        create: {
+            id: userId,
+            email: "", // You may want to get this from Clerk
+            points: 0,
+        },
+    })
+
+    const newUpload = await prisma.upload.create({
+        data: {
+            userId,
+            fileName,
+            fileUrl: publicUrlData.publicUrl,
+            fileType: file.type,
+            fileSize: file.size,
+            recyclingType,
+            pointsEarned: pointsEarned, // Explicitly set the points
+        },
+    })
+
+    await prisma.user.update({
+        where: { id: userId },
+        data: { points: { increment: pointsEarned } },
+    })
+
+    return NextResponse.json({ success: true, ...newUpload })
 }

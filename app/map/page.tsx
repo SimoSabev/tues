@@ -4,9 +4,9 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Recycle, Filter, Loader2, Navigation, Search, Target, TrendingUp, AlertCircle, X, Sparkles } from "lucide-react"
-import Link from "next/link"
-import { UserButton } from "@clerk/nextjs"
+import { Input } from "@/components/ui/input"
+import { MapPin, Recycle, Loader2, Navigation, Search, Target, X, Filter, Layers } from "lucide-react"
+import { AppHeader } from "@/components/app-header"
 import dynamic from "next/dynamic"
 import { motion, AnimatePresence } from "framer-motion"
 import useSWR from "swr"
@@ -16,22 +16,15 @@ const RecyclingMap = dynamic(
     {
         ssr: false,
         loading: () => (
-            <div className="w-full h-[700px] bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-emerald-100/50">
-                <div className="text-center space-y-6">
+            <div className="w-full h-[700px] bg-gradient-to-br from-muted to-secondary/30 rounded-3xl flex items-center justify-center">
+                <div className="text-center space-y-4">
                     <motion.div
-                        className="relative w-24 h-24 mx-auto"
                         animate={{ rotate: 360 }}
-                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
                     >
-                        <div className="absolute inset-0 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full opacity-20 blur-xl" />
-                        <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-2xl shadow-emerald-500/50">
-                            <Recycle className="w-12 h-12 text-white" />
-                        </div>
+                        <Recycle className="w-16 h-16 text-primary mx-auto" />
                     </motion.div>
-                    <div>
-                        <p className="text-emerald-900 font-semibold text-lg">Loading Interactive Map</p>
-                        <p className="text-emerald-600 text-sm mt-1">Finding recycling locations near you...</p>
-                    </div>
+                    <p className="text-base font-medium text-muted-foreground">Loading interactive map...</p>
                 </div>
             </div>
         ),
@@ -52,21 +45,12 @@ interface RecyclingBin {
 }
 
 const binTypeColors: Record<string, string> = {
-    plastic: "bg-amber-500",
-    glass: "bg-emerald-500",
-    paper: "bg-blue-500",
-    metal: "bg-slate-500",
-    ewaste: "bg-rose-500",
-    textile: "bg-violet-500",
-}
-
-const binTypeGradients: Record<string, string> = {
     plastic: "from-amber-500 to-orange-500",
     glass: "from-emerald-500 to-teal-500",
     paper: "from-blue-500 to-cyan-500",
-    metal: "from-slate-500 to-zinc-500",
-    ewaste: "from-rose-500 to-pink-500",
-    textile: "from-violet-500 to-purple-500",
+    metal: "from-slate-500 to-gray-600",
+    ewaste: "from-rose-500 to-pink-600",
+    textile: "from-violet-500 to-purple-600",
 }
 
 const binTypeLabels: Record<string, string> = {
@@ -78,9 +62,8 @@ const binTypeLabels: Record<string, string> = {
     textile: "Textile",
 }
 
-// Calculate distance between two coordinates (Haversine formula)
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-    const R = 6371 // Radius of the Earth in km
+    const R = 6371
     const dLat = (lat2 - lat1) * (Math.PI / 180)
     const dLon = (lon2 - lon1) * (Math.PI / 180)
     const a =
@@ -95,15 +78,11 @@ export default function MapPage() {
     const [selectedBin, setSelectedBin] = useState<RecyclingBin | null>(null)
     const [filter, setFilter] = useState<string>("all")
     const [searchQuery, setSearchQuery] = useState("")
-    const [isFilterOpen, setIsFilterOpen] = useState(false)
 
-    // Fetch all bins for accurate counts
     const { data: allBinsData } = useSWR(
-        userLocation
-            ? `/api/recycling-bins?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=3000&type=all`
-            : null,
+        userLocation ? `/api/recycling-bins?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=3000&type=all` : null,
         fetcher,
-        { refreshInterval: 30000 }
+        { refreshInterval: 30000 },
     )
 
     const { data, error, isLoading } = useSWR(
@@ -111,33 +90,32 @@ export default function MapPage() {
             ? `/api/recycling-bins?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=3000&type=${filter}`
             : null,
         fetcher,
-        { refreshInterval: 30000 }
+        { refreshInterval: 30000 },
     )
 
     const recyclingBins: RecyclingBin[] = data?.bins || []
     const allBins: RecyclingBin[] = allBinsData?.bins || []
 
-    // Add distance to bins
     const binsWithDistance = recyclingBins
         .map((bin) => ({
             ...bin,
-            distance: userLocation
-                ? calculateDistance(userLocation.lat, userLocation.lng, bin.lat, bin.lng)
-                : 0,
+            distance: userLocation ? calculateDistance(userLocation.lat, userLocation.lng, bin.lat, bin.lng) : 0,
         }))
         .sort((a, b) => a.distance - b.distance)
 
     const filteredBins = binsWithDistance.filter(
         (bin) =>
             bin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            bin.address.toLowerCase().includes(searchQuery.toLowerCase())
+            bin.address.toLowerCase().includes(searchQuery.toLowerCase()),
     )
 
-    // Calculate counts for each type from all bins
-    const typeCounts = Object.keys(binTypeLabels).reduce((acc, type) => {
-        acc[type] = allBins.filter((b) => b.type === type).length
-        return acc
-    }, {} as Record<string, number>)
+    const typeCounts = Object.keys(binTypeLabels).reduce(
+        (acc, type) => {
+            acc[type] = allBins.filter((b) => b.type === type).length
+            return acc
+        },
+        {} as Record<string, number>,
+    )
 
     useEffect(() => {
         if (navigator.geolocation) {
@@ -149,7 +127,6 @@ export default function MapPage() {
                     })
                 },
                 (error) => {
-                    console.log("Location access denied, using default location")
                     setUserLocation({ lat: 40.7589, lng: -73.9851 })
                 },
             )
@@ -160,262 +137,189 @@ export default function MapPage() {
 
     const handleRecenter = () => {
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    setUserLocation({
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                    })
-                },
-            )
+            navigator.geolocation.getCurrentPosition((position) => {
+                setUserLocation({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                })
+            })
         }
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
-            {/* Enhanced Header */}
-            <header className="border-b border-emerald-100/50 bg-white/80 backdrop-blur-xl sticky top-0 z-50 shadow-sm">
-                <div className="container mx-auto px-4 py-3">
-                    <div className="flex items-center justify-between">
-                        <Link href="/" className="flex items-center gap-3 group">
-                            <motion.div
-                                className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-600 flex items-center justify-center shadow-lg shadow-emerald-500/30"
-                                whileHover={{ scale: 1.05, rotate: 5 }}
-                                whileTap={{ scale: 0.95 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                            >
-                                <Recycle className="w-6 h-6 text-white" />
-                                <motion.div
-                                    className="absolute inset-0 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-400 opacity-0 group-hover:opacity-20"
-                                    initial={{ scale: 0 }}
-                                    whileHover={{ scale: 1 }}
-                                />
-                            </motion.div>
-                            <div>
-                                <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-700 to-teal-700 bg-clip-text text-transparent">
-                                    Sortify
-                                </h1>
-                                <p className="text-[10px] text-emerald-600 -mt-0.5">Recycle Smarter</p>
-                            </div>
-                        </Link>
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
+            <AppHeader />
 
-                        <nav className="hidden md:flex items-center gap-1">
-                            {[
-                                { href: "/", label: "Dashboard" },
-                                { href: "/map", label: "Map", active: true },
-                                { href: "/upload", label: "Upload" },
-                                { href: "/leaderboard", label: "Leaderboard" },
-                            ].map((item) => (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                                        item.active
-                                            ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30"
-                                            : "text-emerald-700 hover:bg-emerald-50 hover:text-emerald-900"
-                                    }`}
-                                >
-                                    {item.label}
-                                </Link>
-                            ))}
-                        </nav>
-
-                        <UserButton
-                            appearance={{
-                                elements: {
-                                    userButtonAvatarBox: "w-10 h-10 border-2 border-emerald-200",
-                                    userButtonPopoverCard:
-                                        "bg-white/95 backdrop-blur-xl border border-emerald-100 shadow-2xl",
-                                },
-                            }}
-                        />
-                    </div>
-                </div>
-            </header>
-
-            <main className="container mx-auto px-4 py-6 md:py-10">
-                {/* Enhanced Hero Section */}
-                <motion.div
-                    className="mb-8"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                >
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <main className="container mx-auto px-4 lg:px-8 py-12">
+                <motion.div className="mb-10" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8">
                         <div>
-                            <div className="flex items-center gap-3 mb-2">
-                                <h2 className="text-3xl md:text-5xl font-bold text-emerald-900">
-                                    Recycling Map
-                                </h2>
-                                <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0">
-                                    <Sparkles className="w-3 h-3 mr-1" />
-                                    Live
-                                </Badge>
-                            </div>
-                            <p className="text-emerald-700 text-base md:text-lg">
-                                Discover {data?.count || 0} recycling points within 3km radius
-                            </p>
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.1 }}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-4"
+                            >
+                                <Layers className="h-4 w-4 text-primary" />
+                                <span className="text-sm font-semibold text-primary">Interactive Map</span>
+                            </motion.div>
+                            <h1 className="text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-3">
+                                Find Recycling Locations
+                            </h1>
+                            <p className="text-xl text-muted-foreground">{data?.count || 0} locations within 3km radius</p>
                         </div>
 
-                        {/* Search Bar */}
-                        <div className="relative w-full md:w-96">
-                            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-emerald-400" />
-                            <input
+                        <motion.div
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="relative w-full lg:w-96"
+                        >
+                            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                            <Input
                                 type="text"
                                 placeholder="Search locations..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-emerald-100 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100 outline-none transition-all bg-white/80 backdrop-blur-sm"
+                                className="pl-12 h-14 text-base rounded-2xl border-2 focus:border-primary shadow-sm"
                             />
-                        </div>
-                    </div>
-                </motion.div>
-
-                <div className="grid lg:grid-cols-12 gap-6">
-                    {/* Map Area - 8 columns */}
-                    <div className="lg:col-span-8">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.98 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.5, delay: 0.1 }}
-                            className="relative"
-                        >
-                            {/* Map Card */}
-                            <Card className="bg-white/80 backdrop-blur-sm overflow-hidden shadow-2xl border-2 border-emerald-100/50 rounded-2xl">
-                                <CardContent className="p-0 relative">
-                                    {isLoading ? (
-                                        <div className="w-full h-[700px] bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl flex items-center justify-center">
-                                            <div className="text-center">
-                                                <Loader2 className="w-14 h-14 text-emerald-600 animate-spin mx-auto mb-4" />
-                                                <p className="text-emerald-900 font-semibold text-lg">Loading locations...</p>
-                                                <p className="text-emerald-600 text-sm mt-1">This won't take long</p>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <RecyclingMap
-                                            bins={filteredBins}
-                                            userLocation={userLocation}
-                                            onBinSelect={setSelectedBin}
-                                        />
-                                    )}
-
-                                    {/* Floating Recenter Button */}
-                                    <motion.button
-                                        onClick={handleRecenter}
-                                        className="absolute bottom-6 right-6 w-14 h-14 bg-white/95 backdrop-blur-sm rounded-full shadow-lg border-2 border-emerald-200 flex items-center justify-center hover:bg-emerald-50 transition-all group z-[1000]"
-                                        whileHover={{ scale: 1.1 }}
-                                        whileTap={{ scale: 0.95 }}
-                                    >
-                                        <Target className="w-6 h-6 text-emerald-600 group-hover:rotate-90 transition-transform" />
-                                    </motion.button>
-                                </CardContent>
-                            </Card>
-
-                            {/* Stats Bar */}
-                            <motion.div
-                                className="mt-4 grid grid-cols-3 gap-3"
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
-                            >
-                                <Card className="bg-white/80 backdrop-blur-sm border border-emerald-100">
-                                    <CardContent className="p-4 text-center">
-                                        <div className="text-2xl font-bold text-emerald-600">
-                                            {data?.count || 0}
-                                        </div>
-                                        <div className="text-xs text-emerald-700 mt-1">Total Locations</div>
-                                    </CardContent>
-                                </Card>
-                                <Card className="bg-white/80 backdrop-blur-sm border border-teal-100">
-                                    <CardContent className="p-4 text-center">
-                                        <div className="text-2xl font-bold text-teal-600">
-                                            {filteredBins.length > 0
-                                                ? filteredBins[0].distance.toFixed(1)
-                                                : "-"}
-                                            km
-                                        </div>
-                                        <div className="text-xs text-teal-700 mt-1">Nearest Bin</div>
-                                    </CardContent>
-                                </Card>
-                                <Card className="bg-white/80 backdrop-blur-sm border border-cyan-100">
-                                    <CardContent className="p-4 text-center">
-                                        <div className="text-2xl font-bold text-cyan-600">
-                                            {Object.keys(binTypeLabels).length}
-                                        </div>
-                                        <div className="text-xs text-cyan-700 mt-1">Waste Types</div>
-                                    </CardContent>
-                                </Card>
-                            </motion.div>
                         </motion.div>
                     </div>
 
-                    {/* Sidebar - 4 columns */}
-                    <div className="lg:col-span-4 space-y-5">
-                        {/* Filters Card */}
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5, delay: 0.2 }}
-                        >
-                            <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-2 border-emerald-100/50 rounded-2xl overflow-hidden">
-                                <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-100">
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle className="text-emerald-900 flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
-                                                <Filter className="w-4 h-4 text-white" />
+                    <div className="grid gap-6 md:grid-cols-3">
+                        {[
+                            { label: "Total Locations", value: data?.count || 0, icon: MapPin, color: "from-primary to-accent" },
+                            {
+                                label: "Nearest Location",
+                                value: filteredBins.length > 0 ? `${filteredBins[0].distance.toFixed(1)}km` : "-",
+                                icon: Target,
+                                color: "from-accent to-chart-2",
+                            },
+                            {
+                                label: "Waste Types",
+                                value: Object.keys(binTypeLabels).length,
+                                icon: Recycle,
+                                color: "from-success to-chart-3",
+                            },
+                        ].map((stat, index) => (
+                            <motion.div
+                                key={stat.label}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 * index }}
+                                whileHover={{ y: -4 }}
+                            >
+                                <Card className="border-2 shadow-lg hover:shadow-xl transition-all bg-gradient-to-br from-card to-secondary/20">
+                                    <CardContent className="pt-6">
+                                        <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                        {stat.label}
+                      </span>
+                                            <div
+                                                className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${stat.color} shadow-md`}
+                                            >
+                                                <stat.icon className="h-5 w-5 text-white" />
                                             </div>
-                                            Filter Types
-                                        </CardTitle>
+                                        </div>
+                                        <div className="text-4xl font-bold text-foreground">{stat.value}</div>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        ))}
+                    </div>
+                </motion.div>
+
+                <div className="grid lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-8">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.3 }}
+                        >
+                            <Card className="border-2 shadow-2xl overflow-hidden">
+                                <CardContent className="p-0 relative">
+                                    {isLoading ? (
+                                        <div className="w-full h-[700px] bg-gradient-to-br from-muted to-secondary/30 rounded-3xl flex items-center justify-center">
+                                            <div className="text-center">
+                                                <motion.div
+                                                    animate={{ rotate: 360 }}
+                                                    transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                                                >
+                                                    <Recycle className="w-16 h-16 text-primary mx-auto mb-6" />
+                                                </motion.div>
+                                                <p className="text-muted-foreground text-lg font-medium">Loading locations...</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <RecyclingMap bins={filteredBins} userLocation={userLocation} onBinSelect={setSelectedBin} />
+                                    )}
+
+                                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
+                                        <Button
+                                            onClick={handleRecenter}
+                                            size="icon"
+                                            className="absolute bottom-8 right-8 h-16 w-16 rounded-2xl shadow-2xl z-[1000] bg-gradient-to-br from-primary to-accent hover:shadow-primary/50"
+                                        >
+                                            <Target className="h-7 w-7" />
+                                        </Button>
+                                    </motion.div>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    </div>
+
+                    <div className="lg:col-span-4 space-y-6">
+                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
+                            <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-secondary/20">
+                                <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Filter className="h-5 w-5 text-primary" />
+                                            <CardTitle className="text-xl">Filter Types</CardTitle>
+                                        </div>
                                         {filter !== "all" && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() => setFilter("all")}
-                                                className="text-xs"
+                                                className="text-primary hover:text-primary"
                                             >
                                                 Clear
                                             </Button>
                                         )}
                                     </div>
-                                    <CardDescription>Showing {filteredBins.length} locations</CardDescription>
+                                    <CardDescription className="text-base">Showing {filteredBins.length} locations</CardDescription>
                                 </CardHeader>
-                                <CardContent className="p-4 space-y-2">
+                                <CardContent className="space-y-3">
                                     <Button
                                         variant={filter === "all" ? "default" : "outline"}
-                                        className={`w-full justify-start text-sm font-medium transition-all ${
-                                            filter === "all"
-                                                ? "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg"
-                                                : "hover:bg-emerald-50"
-                                        }`}
+                                        className="w-full justify-start text-base h-12 rounded-xl"
                                         onClick={() => setFilter("all")}
                                     >
-                                        <div className="w-2 h-2 rounded-full bg-emerald-400 mr-2" />
                                         All Types ({allBinsData?.count || 0})
                                     </Button>
                                     {Object.entries(binTypeLabels).map(([type, label]) => {
                                         const count = typeCounts[type] || 0
                                         return (
-                                            <Button
-                                                key={type}
-                                                variant={filter === type ? "default" : "outline"}
-                                                className={`w-full justify-start text-sm font-medium transition-all ${
-                                                    filter === type
-                                                        ? `bg-gradient-to-r ${binTypeGradients[type]} hover:opacity-90 shadow-lg text-white`
-                                                        : "hover:bg-emerald-50"
-                                                }`}
-                                                onClick={() => setFilter(type)}
-                                            >
-                                                <div className={`w-2 h-2 rounded-full ${binTypeColors[type]} mr-2`} />
-                                                {label}
-                                                <span className="ml-auto text-xs opacity-70">({count})</span>
-                                            </Button>
+                                            <motion.div key={type} whileHover={{ x: 4 }} whileTap={{ scale: 0.98 }}>
+                                                <Button
+                                                    variant={filter === type ? "default" : "outline"}
+                                                    className="w-full justify-start text-base h-12 rounded-xl"
+                                                    onClick={() => setFilter(type)}
+                                                >
+                                                    <div
+                                                        className={`w-3 h-3 rounded-full bg-gradient-to-br ${binTypeColors[type]} mr-3 shadow-sm`}
+                                                    />
+                                                    {label}
+                                                    <span className="ml-auto text-sm opacity-70 font-semibold">({count})</span>
+                                                </Button>
+                                            </motion.div>
                                         )
                                     })}
                                 </CardContent>
                             </Card>
                         </motion.div>
 
-                        {/* Selected Bin Info */}
                         <AnimatePresence mode="wait">
                             {selectedBin ? (
                                 <motion.div
@@ -423,43 +327,34 @@ export default function MapPage() {
                                     initial={{ opacity: 0, y: 20, scale: 0.95 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                                    transition={{ duration: 0.3 }}
                                 >
-                                    <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-2 border-emerald-200 rounded-2xl overflow-hidden">
-                                        <div
-                                            className={`h-2 bg-gradient-to-r ${binTypeGradients[selectedBin.type]}`}
-                                        />
-                                        <CardHeader className="relative">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="absolute right-4 top-4"
-                                                onClick={() => setSelectedBin(null)}
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </Button>
-                                            <CardTitle className="text-emerald-900 text-xl pr-8">
-                                                {selectedBin.name}
-                                            </CardTitle>
-                                            <CardDescription className="text-base">
-                                                {selectedBin.address}
-                                            </CardDescription>
+                                    <Card className="border-2 shadow-xl bg-gradient-to-br from-card to-secondary/20">
+                                        <CardHeader className="border-b bg-card/50 backdrop-blur-sm">
+                                            <div className="flex items-start justify-between">
+                                                <div className="flex-1">
+                                                    <CardTitle className="text-2xl mb-3">{selectedBin.name}</CardTitle>
+                                                    <CardDescription className="text-base">{selectedBin.address}</CardDescription>
+                                                </div>
+                                                <Button variant="ghost" size="icon" onClick={() => setSelectedBin(null)} className="rounded-xl">
+                                                    <X className="h-5 w-5" />
+                                                </Button>
+                                            </div>
                                         </CardHeader>
-                                        <CardContent className="space-y-4">
-                                            <div className="flex items-center gap-2 flex-wrap">
+                                        <CardContent className="space-y-5 pt-6">
+                                            <div className="flex items-center gap-3 flex-wrap">
                                                 <Badge
-                                                    className={`bg-gradient-to-r ${binTypeGradients[selectedBin.type]} text-white border-0 px-3 py-1`}
+                                                    className={`bg-gradient-to-r ${binTypeColors[selectedBin.type]} text-white text-sm px-3 py-1.5 shadow-md`}
                                                 >
                                                     {binTypeLabels[selectedBin.type]}
                                                 </Badge>
                                                 {userLocation && (
-                                                    <Badge variant="outline" className="border-emerald-200">
-                                                        <TrendingUp className="w-3 h-3 mr-1" />
+                                                    <Badge variant="outline" className="text-sm px-3 py-1.5">
+                                                        <MapPin className="h-3.5 w-3.5 mr-1" />
                                                         {calculateDistance(
                                                             userLocation.lat,
                                                             userLocation.lng,
                                                             selectedBin.lat,
-                                                            selectedBin.lng
+                                                            selectedBin.lng,
                                                         ).toFixed(2)}{" "}
                                                         km away
                                                     </Badge>
@@ -467,41 +362,25 @@ export default function MapPage() {
                                             </div>
 
                                             {selectedBin.description && (
-                                                <div className="text-sm text-emerald-800 bg-gradient-to-br from-emerald-50 to-teal-50 p-4 rounded-xl border border-emerald-100">
-                                                    <p className="font-semibold mb-2 flex items-center gap-2">
-                                                        <Recycle className="w-4 h-4" />
-                                                        Accepts:
-                                                    </p>
-                                                    <p className="text-emerald-700">{selectedBin.description}</p>
+                                                <div className="p-4 rounded-xl bg-muted/50 border">
+                                                    <p className="text-sm font-semibold mb-2 text-foreground">Accepts:</p>
+                                                    <p className="text-sm text-muted-foreground leading-relaxed">{selectedBin.description}</p>
                                                 </div>
                                             )}
 
                                             {selectedBin.hours && (
-                                                <div className="text-sm text-teal-800 bg-gradient-to-br from-teal-50 to-cyan-50 p-4 rounded-xl border border-teal-100">
-                                                    <p className="font-semibold mb-2 flex items-center gap-2">
-                                                        <AlertCircle className="w-4 h-4" />
-                                                        Operating Hours:
-                                                    </p>
-                                                    <p className="text-teal-700">{selectedBin.hours}</p>
+                                                <div className="p-4 rounded-xl bg-muted/50 border">
+                                                    <p className="text-sm font-semibold mb-2 text-foreground">Operating Hours:</p>
+                                                    <p className="text-sm text-muted-foreground leading-relaxed">{selectedBin.hours}</p>
                                                 </div>
                                             )}
 
-                                            <div className="flex items-start gap-2 text-sm text-cyan-800 bg-gradient-to-br from-cyan-50 to-blue-50 p-4 rounded-xl border border-cyan-100">
-                                                <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                                <div className="flex-1">
-                                                    <p className="font-semibold">Coordinates</p>
-                                                    <p className="text-cyan-700 text-xs mt-1">
-                                                        {selectedBin.lat.toFixed(6)}, {selectedBin.lng.toFixed(6)}
-                                                    </p>
-                                                </div>
-                                            </div>
-
                                             <Button
-                                                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-xl hover:shadow-2xl transition-all py-6 text-base font-semibold rounded-xl"
+                                                className="w-full h-14 text-base rounded-xl shadow-lg bg-gradient-to-r from-primary to-accent hover:shadow-xl"
                                                 onClick={() => {
                                                     window.open(
                                                         `https://www.google.com/maps/dir/?api=1&destination=${selectedBin.lat},${selectedBin.lng}`,
-                                                        "_blank"
+                                                        "_blank",
                                                     )
                                                 }}
                                             >
@@ -517,24 +396,19 @@ export default function MapPage() {
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -20 }}
-                                    transition={{ duration: 0.3 }}
                                 >
-                                    <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 shadow-lg border-2 border-emerald-100/50 rounded-2xl">
+                                    <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-secondary/20">
                                         <CardContent className="pt-6">
-                                            <div className="text-center text-emerald-700 py-12">
+                                            <div className="text-center py-16">
                                                 <motion.div
-                                                    className="w-20 h-20 mx-auto mb-6 rounded-full bg-emerald-100 flex items-center justify-center"
-                                                    animate={{ scale: [1, 1.1, 1] }}
-                                                    transition={{ duration: 2, repeat: Infinity }}
+                                                    animate={{ y: [0, -10, 0] }}
+                                                    transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+                                                    className="flex h-20 w-20 items-center justify-center rounded-full bg-muted mx-auto mb-6"
                                                 >
-                                                    <MapPin className="w-10 h-10 text-emerald-500" />
+                                                    <MapPin className="h-10 w-10 text-muted-foreground" />
                                                 </motion.div>
-                                                <p className="text-lg font-semibold text-emerald-900 mb-2">
-                                                    Select a Location
-                                                </p>
-                                                <p className="text-sm text-emerald-600">
-                                                    Click any pin on the map to view details
-                                                </p>
+                                                <p className="font-semibold text-foreground mb-2 text-lg">Select a Location</p>
+                                                <p className="text-sm text-muted-foreground">Click any pin on the map to view details</p>
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -542,73 +416,50 @@ export default function MapPage() {
                             )}
                         </AnimatePresence>
 
-                        {/* Nearby Bins List */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.3 }}
-                        >
-                            <Card className="bg-white/90 backdrop-blur-sm shadow-xl border-2 border-emerald-100/50 rounded-2xl overflow-hidden">
-                                <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-100">
-                                    <CardTitle className="text-emerald-900 flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-lg bg-teal-500 flex items-center justify-center">
-                                            <MapPin className="w-4 h-4 text-white" />
-                                        </div>
-                                        Nearby Locations
-                                    </CardTitle>
-                                    <CardDescription>
+                        {/* Nearby Locations */}
+                        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}>
+                            <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-secondary/20">
+                                <CardHeader>
+                                    <CardTitle className="text-xl">Nearby Locations</CardTitle>
+                                    <CardDescription className="text-base">
                                         {isLoading ? "Loading..." : `${filteredBins.length} locations found`}
                                     </CardDescription>
                                 </CardHeader>
-                                <CardContent className="p-3 space-y-2 max-h-[500px] overflow-y-auto custom-scrollbar">
+                                <CardContent className="space-y-2 max-h-[400px] overflow-y-auto">
                                     {isLoading ? (
                                         <div className="text-center py-8">
-                                            <Loader2 className="w-10 h-10 text-emerald-600 animate-spin mx-auto" />
+                                            <Loader2 className="w-8 h-8 text-primary animate-spin mx-auto" />
                                         </div>
                                     ) : filteredBins.length > 0 ? (
-                                        filteredBins.map((bin, index) => (
-                                            <motion.div
+                                        filteredBins.map((bin) => (
+                                            <button
                                                 key={bin.id}
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: index * 0.03 }}
-                                                className={`p-4 rounded-xl bg-gradient-to-br from-white to-emerald-50/50 border-2 cursor-pointer transition-all hover:shadow-lg hover:-translate-y-0.5 group ${
-                                                    selectedBin?.id === bin.id
-                                                        ? "border-emerald-400 shadow-lg"
-                                                        : "border-emerald-100 hover:border-emerald-300"
-                                                }`}
                                                 onClick={() => setSelectedBin(bin)}
+                                                className={`w-full p-3 rounded-lg border-2 text-left transition-all hover:border-primary ${
+                                                    selectedBin?.id === bin.id ? "border-primary bg-secondary" : "border-border"
+                                                }`}
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <div
-                                                        className={`w-12 h-12 rounded-xl bg-gradient-to-br ${binTypeGradients[bin.type]} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-md`}
+                                                        className={`w-10 h-10 rounded-lg ${binTypeColors[bin.type]} flex items-center justify-center flex-shrink-0`}
                                                     >
-                                                        <Recycle className="w-6 h-6 text-white" />
+                                                        <Recycle className="w-5 h-5 text-white" />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-2 mb-1">
-                                                            <p className="font-semibold text-sm text-emerald-900 truncate">
-                                                                {bin.name}
-                                                            </p>
-                                                            <Badge
-                                                                variant="outline"
-                                                                className="text-[10px] px-1.5 py-0 border-emerald-200"
-                                                            >
+                                                            <p className="font-medium text-sm truncate">{bin.name}</p>
+                                                            <Badge variant="outline" className="text-xs">
                                                                 {bin.distance.toFixed(1)}km
                                                             </Badge>
                                                         </div>
-                                                        <p className="text-xs text-emerald-600 truncate">{bin.address}</p>
+                                                        <p className="text-xs text-muted-foreground truncate">{bin.address}</p>
                                                     </div>
                                                 </div>
-                                            </motion.div>
+                                            </button>
                                         ))
                                     ) : (
-                                        <div className="text-center py-12">
-                                            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-100 flex items-center justify-center">
-                                                <AlertCircle className="w-8 h-8 text-emerald-500" />
-                                            </div>
-                                            <p className="text-emerald-900 font-medium mb-1">No locations found</p>
-                                            <p className="text-sm text-emerald-600">Try adjusting your filters</p>
+                                        <div className="text-center py-8">
+                                            <p className="text-muted-foreground">No locations found</p>
                                         </div>
                                     )}
                                 </CardContent>
@@ -617,23 +468,6 @@ export default function MapPage() {
                     </div>
                 </div>
             </main>
-
-            <style jsx global>{`
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 8px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: #f0fdf4;
-                    border-radius: 100px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: #10b981;
-                    border-radius: 100px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: #059669;
-                }
-            `}</style>
         </div>
     )
 }

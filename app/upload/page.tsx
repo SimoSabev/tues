@@ -1,16 +1,16 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Upload, Camera, CheckCircle2, Loader2, Recycle, Video } from "lucide-react"
-import Link from "next/link"
-import { UserButton } from "@clerk/nextjs"
+import { Upload, Camera, CheckCircle2, Loader2, Recycle, Video, AlertCircle, Sparkles, Zap, Star } from "lucide-react"
+import { AppHeader } from "@/components/app-header"
 import { motion, AnimatePresence } from "framer-motion"
 import useSWR from "swr"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -20,11 +20,22 @@ interface UploadData {
         fileName: string
         fileUrl: string
         uploadedAt: string
+        recyclingType: string
+        pointsEarned: number
     }>
     points: number
 }
 
 type UploadStatus = "idle" | "uploading" | "scanning" | "approved" | "rejected"
+
+const RECYCLING_TYPES = [
+    { id: "plastic", label: "Plastic bottles", points: 25, color: "from-amber-500 to-orange-500" },
+    { id: "glass", label: "Glass containers", points: 35, color: "from-emerald-500 to-teal-500" },
+    { id: "paper", label: "Paper/Cardboard", points: 20, color: "from-blue-500 to-cyan-500" },
+    { id: "metal", label: "Metal cans", points: 30, color: "from-slate-500 to-zinc-500" },
+    { id: "ewaste", label: "E-waste", points: 50, color: "from-rose-500 to-pink-500" },
+    { id: "textile", label: "Textiles", points: 40, color: "from-violet-500 to-purple-500" },
+]
 
 export default function UploadPage() {
     const { data, error, mutate } = useSWR<UploadData>("/api/upload", fetcher)
@@ -33,6 +44,7 @@ export default function UploadPage() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
     const [pointsEarned, setPointsEarned] = useState(0)
+    const [selectedType, setSelectedType] = useState<string>("plastic")
 
     const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0]
@@ -50,6 +62,7 @@ export default function UploadPage() {
 
         const formData = new FormData()
         formData.append("file", selectedFile)
+        formData.append("recyclingType", selectedType)
 
         try {
             const res = await fetch("/api/upload", {
@@ -64,9 +77,7 @@ export default function UploadPage() {
                 await new Promise((resolve) => setTimeout(resolve, 2000))
 
                 setUploadStatus("approved")
-                setPointsEarned(10)
-
-                // Refresh the upload list
+                setPointsEarned(result.pointsEarned)
                 mutate()
             } else {
                 alert(`Error: ${result.error}`)
@@ -86,117 +97,127 @@ export default function UploadPage() {
         setPointsEarned(0)
     }
 
+    const selectedTypeDetails = RECYCLING_TYPES.find((t) => t.id === selectedType)
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50">
-            {/* Header */}
-            <header className="border-b bg-white/90 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-                <div className="container mx-auto px-4 py-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <motion.div
-                                className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-600 flex items-center justify-center shadow-lg"
-                                whileHover={{ scale: 1.05 }}
-                            >
-                                <Recycle className="w-7 h-7 text-white" />
-                            </motion.div>
-                            <div>
-                                <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-700 to-teal-700 bg-clip-text text-transparent">
-                                    Sortex
-                                </h1>
-                                <p className="text-xs text-emerald-600">Recycle Smarter</p>
-                            </div>
-                        </div>
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
+            <AppHeader />
 
-                        <nav className="hidden md:flex items-center gap-2">
-                            <Link
-                                href="/"
-                                className="px-4 py-2 rounded-lg text-emerald-700 hover:bg-emerald-50 hover:text-emerald-900 transition-all"
-                            >
-                                Dashboard
-                            </Link>
-                            <Link
-                                href="/map"
-                                className="px-4 py-2 rounded-lg text-emerald-700 hover:bg-emerald-50 hover:text-emerald-900 transition-all"
-                            >
-                                Map
-                            </Link>
-                            <Link
-                                href="/upload"
-                                className="px-4 py-2 rounded-lg bg-emerald-100 text-emerald-900 font-medium transition-all"
-                            >
-                                Upload
-                            </Link>
-                            <Link
-                                href="/leaderboard"
-                                className="px-4 py-2 rounded-lg text-emerald-700 hover:bg-emerald-50 hover:text-emerald-900 transition-all"
-                            >
-                                Leaderboard
-                            </Link>
-                        </nav>
-
-                        <div className="flex items-center gap-4">
-                            <UserButton />
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            <main className="container mx-auto px-4 py-8">
-                <motion.div className="mb-8" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                    <h2 className="text-3xl font-bold text-emerald-900 mb-2">Upload & Earn Points</h2>
-                    <p className="text-emerald-700">Scan your recycling to verify and earn eco points</p>
+            <main className="container mx-auto px-4 lg:px-8 py-12">
+                <motion.div className="mb-10" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}>
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.1 }}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 mb-4"
+                    >
+                        <Camera className="h-4 w-4 text-accent" />
+                        <span className="text-sm font-semibold text-accent">Scan & Earn</span>
+                    </motion.div>
+                    <h1 className="text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-3 text-balance">
+                        Upload & Earn Points
+                    </h1>
+                    <p className="text-xl text-muted-foreground text-pretty">
+                        Scan your recycling to verify and earn eco points instantly
+                    </p>
                 </motion.div>
 
                 <div className="grid lg:grid-cols-2 gap-8">
-                    {/* Upload Area */}
-                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                        <Card className="bg-white shadow-xl">
-                            <CardHeader>
-                                <CardTitle className="text-emerald-900">Upload Photo or Video</CardTitle>
-                                <CardDescription>Take a photo or video of your recycling items for verification</CardDescription>
+                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
+                        <Card className="border-2 shadow-xl bg-gradient-to-br from-card to-secondary/20 overflow-hidden">
+                            <CardHeader className="border-b bg-card/50 backdrop-blur-sm">
+                                <CardTitle className="text-2xl">Upload Photo or Video</CardTitle>
+                                <CardDescription className="text-base">
+                                    Take a photo or video of your recycling items for verification
+                                </CardDescription>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="pt-6 space-y-6">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-lg font-semibold">Select Recycling Type</Label>
+                                        {selectedTypeDetails && (
+                                            <Badge className={`bg-gradient-to-r ${selectedTypeDetails.color} text-white px-3 py-1 shadow-md`}>
+                                                {selectedTypeDetails.points} pts
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    <RadioGroup value={selectedType} onValueChange={setSelectedType} className="grid grid-cols-2 gap-3">
+                                        {RECYCLING_TYPES.map((type) => (
+                                            <motion.div
+                                                key={type.id}
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                className="relative"
+                                            >
+                                                <RadioGroupItem value={type.id} id={type.id} className="peer sr-only" />
+                                                <Label
+                                                    htmlFor={type.id}
+                                                    className="flex flex-col items-center justify-center rounded-xl border-2 border-border bg-card p-4 hover:bg-accent/5 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 cursor-pointer transition-all"
+                                                >
+                                                    <div className={`w-4 h-4 rounded-full bg-gradient-to-br ${type.color} mb-2 shadow-sm`} />
+                                                    <span className="text-sm font-medium text-center leading-tight">{type.label}</span>
+                                                    <span className="text-xs text-muted-foreground mt-1">{type.points} pts</span>
+                                                </Label>
+                                            </motion.div>
+                                        ))}
+                                    </RadioGroup>
+                                </div>
+
                                 {!previewUrl ? (
                                     <label className="block">
                                         <input type="file" accept="image/*,video/*" onChange={handleFileSelect} className="hidden" />
                                         <motion.div
-                                            className="border-2 border-dashed border-emerald-300 rounded-xl p-12 text-center cursor-pointer hover:border-emerald-500 hover:bg-emerald-50 transition-all"
-                                            whileHover={{ scale: 1.02 }}
+                                            whileHover={{ scale: 1.02, borderColor: "var(--color-primary)" }}
                                             whileTap={{ scale: 0.98 }}
+                                            className="border-2 border-dashed border-border rounded-2xl p-16 text-center cursor-pointer hover:bg-secondary/50 transition-all group"
                                         >
-                                            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-                                                <Upload className="w-8 h-8 text-emerald-600" />
-                                            </div>
-                                            <p className="text-lg font-medium text-emerald-900 mb-2">Click to upload or drag and drop</p>
-                                            <p className="text-sm text-emerald-600">PNG, JPG, MP4 up to 10MB</p>
+                                            <motion.div
+                                                animate={{ y: [0, -10, 0] }}
+                                                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+                                                className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-accent to-chart-2 mx-auto mb-6 shadow-lg group-hover:shadow-xl"
+                                            >
+                                                <Upload className="h-10 w-10 text-accent-foreground" />
+                                            </motion.div>
+                                            <p className="text-xl font-semibold text-foreground mb-2">Click to upload or drag and drop</p>
+                                            <p className="text-base text-muted-foreground">PNG, JPG, MP4 up to 10MB</p>
                                         </motion.div>
                                     </label>
                                 ) : (
-                                    <div className="space-y-4">
-                                        {/* Preview */}
-                                        <div className="relative rounded-xl overflow-hidden bg-emerald-50 border-2 border-emerald-200">
+                                    <div className="space-y-6">
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            className="relative rounded-2xl overflow-hidden bg-muted border-2 border-border shadow-lg"
+                                        >
                                             {selectedFile?.type.startsWith("video/") ? (
-                                                <div className="aspect-video flex items-center justify-center">
-                                                    <Video className="w-16 h-16 text-emerald-600" />
+                                                <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-muted to-secondary">
+                                                    <div className="text-center">
+                                                        <Video className="w-20 h-20 text-muted-foreground mx-auto mb-4" />
+                                                        <p className="text-sm text-muted-foreground">Video selected</p>
+                                                    </div>
                                                 </div>
                                             ) : (
                                                 <img src={previewUrl || "/placeholder.svg"} alt="Preview" className="w-full h-auto" />
                                             )}
-                                        </div>
+                                        </motion.div>
 
-                                        {/* Status Display */}
                                         <AnimatePresence mode="wait">
                                             {uploadStatus === "uploading" && (
                                                 <motion.div
                                                     initial={{ opacity: 0, y: 10 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     exit={{ opacity: 0, y: -10 }}
-                                                    className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg"
+                                                    className="flex items-center gap-4 p-5 bg-gradient-to-r from-chart-2/10 to-accent/10 border-2 border-chart-2/30 rounded-2xl"
                                                 >
-                                                    <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                                                    <motion.div
+                                                        animate={{ rotate: 360 }}
+                                                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                                                    >
+                                                        <Loader2 className="w-6 h-6 text-chart-2" />
+                                                    </motion.div>
                                                     <div>
-                                                        <p className="font-medium text-blue-900">Uploading...</p>
-                                                        <p className="text-sm text-blue-600">Please wait</p>
+                                                        <p className="font-semibold text-foreground text-lg">Uploading...</p>
+                                                        <p className="text-sm text-muted-foreground">Please wait while we process your file</p>
                                                     </div>
                                                 </motion.div>
                                             )}
@@ -206,12 +227,17 @@ export default function UploadPage() {
                                                     initial={{ opacity: 0, y: 10 }}
                                                     animate={{ opacity: 1, y: 0 }}
                                                     exit={{ opacity: 0, y: -10 }}
-                                                    className="flex items-center gap-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
+                                                    className="flex items-center gap-4 p-5 bg-gradient-to-r from-warning/10 to-chart-4/10 border-2 border-warning/30 rounded-2xl"
                                                 >
-                                                    <Loader2 className="w-5 h-5 text-yellow-600 animate-spin" />
+                                                    <motion.div
+                                                        animate={{ rotate: 360 }}
+                                                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                                                    >
+                                                        <Sparkles className="w-6 h-6 text-warning" />
+                                                    </motion.div>
                                                     <div>
-                                                        <p className="font-medium text-yellow-900">Scanning & Analyzing...</p>
-                                                        <p className="text-sm text-yellow-600">AI is verifying your recycling</p>
+                                                        <p className="font-semibold text-foreground text-lg">Scanning & Analyzing...</p>
+                                                        <p className="text-sm text-muted-foreground">AI is verifying your recycling items</p>
                                                     </div>
                                                 </motion.div>
                                             )}
@@ -221,37 +247,48 @@ export default function UploadPage() {
                                                     initial={{ opacity: 0, scale: 0.9 }}
                                                     animate={{ opacity: 1, scale: 1 }}
                                                     exit={{ opacity: 0, scale: 0.9 }}
-                                                    className="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-lg"
+                                                    className="flex items-center gap-4 p-5 bg-gradient-to-r from-success/10 to-chart-3/10 border-2 border-success/30 rounded-2xl"
                                                 >
-                                                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                                                    <motion.div
+                                                        initial={{ scale: 0 }}
+                                                        animate={{ scale: 1, rotate: 360 }}
+                                                        transition={{ type: "spring", stiffness: 200 }}
+                                                    >
+                                                        <CheckCircle2 className="w-6 h-6 text-success" />
+                                                    </motion.div>
                                                     <div className="flex-1">
-                                                        <p className="font-medium text-emerald-900">Approved!</p>
-                                                        <p className="text-sm text-emerald-600">Your recycling has been verified</p>
+                                                        <p className="font-semibold text-foreground text-lg">Approved!</p>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Your recycling has been verified successfully
+                                                        </p>
                                                     </div>
-                                                    <Badge className="bg-emerald-600 text-white text-lg px-4 py-2">+{pointsEarned} pts</Badge>
+                                                    <Badge className="bg-gradient-to-r from-success to-chart-3 text-success-foreground text-base px-4 py-2 shadow-lg">
+                                                        <Star className="h-4 w-4 mr-1" />+{pointsEarned} pts
+                                                    </Badge>
                                                 </motion.div>
                                             )}
                                         </AnimatePresence>
 
-                                        {/* Action Buttons */}
                                         <div className="flex gap-3">
                                             {uploadStatus === "idle" && (
                                                 <>
-                                                    <Button onClick={handleUpload} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
-                                                        <Camera className="w-4 h-4 mr-2" />
+                                                    <Button onClick={handleUpload} className="flex-1 h-14 text-base shadow-lg" size="lg">
+                                                        <Camera className="w-5 h-5 mr-2" />
                                                         Scan & Verify
                                                     </Button>
                                                     <Button
                                                         onClick={handleReset}
                                                         variant="outline"
-                                                        className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 bg-transparent"
+                                                        size="lg"
+                                                        className="h-14 text-base bg-transparent"
                                                     >
                                                         Cancel
                                                     </Button>
                                                 </>
                                             )}
                                             {uploadStatus === "approved" && (
-                                                <Button onClick={handleReset} className="w-full bg-emerald-600 hover:bg-emerald-700">
+                                                <Button onClick={handleReset} className="w-full h-14 text-base shadow-lg" size="lg">
+                                                    <Upload className="w-5 h-5 mr-2" />
                                                     Upload Another
                                                 </Button>
                                             )}
@@ -262,54 +299,71 @@ export default function UploadPage() {
                         </Card>
                     </motion.div>
 
-                    {/* Info & Tips */}
-                    <motion.div className="space-y-6" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                        <Card className="bg-white shadow-xl">
+                    <motion.div
+                        className="space-y-6"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
+                    >
+                        <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-secondary/20">
                             <CardHeader>
-                                <CardTitle className="text-emerald-900">How It Works</CardTitle>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Zap className="h-5 w-5 text-primary" />
+                                    <CardTitle className="text-2xl">How It Works</CardTitle>
+                                </div>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {[
                                     {
                                         step: "1",
-                                        title: "Take a Photo",
-                                        desc: "Capture a clear image of your recycling items",
+                                        title: "Select Type",
+                                        desc: "Choose what type of recycling you're uploading",
+                                        color: "from-primary to-accent",
                                     },
                                     {
                                         step: "2",
-                                        title: "AI Verification",
-                                        desc: "Our system analyzes and verifies your recycling",
+                                        title: "Take a Photo",
+                                        desc: "Capture a clear image of your recycling items",
+                                        color: "from-accent to-chart-2",
                                     },
                                     {
                                         step: "3",
                                         title: "Earn Points",
-                                        desc: "Get eco points added to your account instantly",
+                                        desc: "Get eco points based on the item type",
+                                        color: "from-success to-chart-3",
                                     },
                                 ].map((item, index) => (
                                     <motion.div
                                         key={index}
-                                        className="flex gap-4"
                                         initial={{ opacity: 0, x: -20 }}
                                         animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: index * 0.1 }}
+                                        transition={{ delay: 0.4 + index * 0.1 }}
+                                        whileHover={{ x: 8 }}
+                                        className="flex gap-4 p-4 rounded-xl bg-card border hover:border-primary/40 transition-all"
                                     >
-                                        <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                                            <span className="text-emerald-600 font-bold">{item.step}</span>
+                                        <div
+                                            className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${item.color} flex-shrink-0 shadow-lg`}
+                                        >
+                                            <span className="text-white font-bold text-xl">{item.step}</span>
                                         </div>
                                         <div>
-                                            <p className="font-medium text-emerald-900">{item.title}</p>
-                                            <p className="text-sm text-emerald-600">{item.desc}</p>
+                                            <p className="font-semibold text-foreground text-lg mb-1">{item.title}</p>
+                                            <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
                                         </div>
                                     </motion.div>
                                 ))}
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-gradient-to-br from-teal-600 to-emerald-700 border-0 text-white shadow-xl">
-                            <CardHeader>
-                                <CardTitle className="text-white">Tips for Best Results</CardTitle>
+                        <Card className="border-2 shadow-lg bg-gradient-to-br from-primary to-accent text-primary-foreground overflow-hidden relative">
+                            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
+                            <CardHeader className="relative">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Sparkles className="h-5 w-5" />
+                                    <CardTitle className="text-2xl">Tips for Best Results</CardTitle>
+                                </div>
                             </CardHeader>
-                            <CardContent className="space-y-3">
+                            <CardContent className="space-y-3 relative">
                                 {[
                                     "Ensure good lighting for clear photos",
                                     "Show the full item and any recycling symbols",
@@ -318,41 +372,43 @@ export default function UploadPage() {
                                 ].map((tip, index) => (
                                     <motion.div
                                         key={index}
-                                        className="flex items-start gap-3"
                                         initial={{ opacity: 0, x: -20 }}
                                         animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: index * 0.1 }}
+                                        transition={{ delay: 0.6 + index * 0.1 }}
+                                        className="flex items-start gap-3 p-3 rounded-xl bg-white/10 backdrop-blur-sm"
                                     >
-                                        <CheckCircle2 className="w-5 h-5 text-teal-200 flex-shrink-0 mt-0.5" />
-                                        <p className="text-sm text-teal-50">{tip}</p>
+                                        <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                                        <p className="text-sm leading-relaxed">{tip}</p>
                                     </motion.div>
                                 ))}
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-white shadow-xl">
+                        <Card className="border-2 shadow-lg bg-gradient-to-br from-card to-secondary/20">
                             <CardHeader>
-                                <CardTitle className="text-emerald-900">Point Values</CardTitle>
-                                <CardDescription>Earn points based on item type</CardDescription>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Star className="h-5 w-5 text-accent" />
+                                    <CardTitle className="text-2xl">Point Values</CardTitle>
+                                </div>
+                                <CardDescription className="text-base">Earn points based on item type</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-2">
-                                {[
-                                    { type: "Plastic bottles", points: "20-30" },
-                                    { type: "Glass containers", points: "30-40" },
-                                    { type: "Paper/Cardboard", points: "15-25" },
-                                    { type: "Metal cans", points: "25-35" },
-                                    { type: "E-waste", points: "40-60" },
-                                    { type: "Textiles", points: "30-50" },
-                                ].map((item, index) => (
+                                {RECYCLING_TYPES.map((item, index) => (
                                     <motion.div
                                         key={index}
-                                        className="flex items-center justify-between p-3 rounded-lg bg-emerald-50"
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: index * 0.05 }}
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.7 + index * 0.05 }}
+                                        whileHover={{ scale: 1.02, x: 4 }}
+                                        className="flex items-center justify-between p-4 rounded-xl bg-card border-2 hover:border-primary/40 transition-all"
                                     >
-                                        <span className="text-sm font-medium text-emerald-900">{item.type}</span>
-                                        <Badge className="bg-emerald-600 text-white">{item.points} pts</Badge>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-3 h-3 rounded-full bg-gradient-to-br ${item.color} shadow-md`} />
+                                            <span className="text-sm font-medium">{item.label}</span>
+                                        </div>
+                                        <Badge variant="outline" className="text-sm px-3 py-1">
+                                            {item.points} pts
+                                        </Badge>
                                     </motion.div>
                                 ))}
                             </CardContent>
@@ -362,57 +418,78 @@ export default function UploadPage() {
 
                 <motion.div
                     className="mt-12"
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
+                    transition={{ delay: 0.5 }}
                 >
-                    <Card className="bg-white shadow-xl">
-                        <CardHeader>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <CardTitle className="text-emerald-900 text-2xl">Your Uploads</CardTitle>
-                                    <CardDescription className="text-emerald-600">
-                                        History of your recycling contributions
-                                    </CardDescription>
+                    {data && data.uploads.length > 0 && (
+                        <Card className="mt-6 bg-gradient-to-br from-muted/50 to-background border-2 border-border/40 shadow-xl rounded-2xl overflow-hidden">
+                            <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10 border-b border-border/30">
+                                <CardTitle className="flex items-center gap-2 text-xl font-bold text-primary">
+                                    <Recycle className="h-5 w-5 text-accent" /> Your Uploads
+                                </CardTitle>
+                                <CardDescription>Check your recent recycling contributions</CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-6 space-y-6">
+                                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {data.uploads.map((upload) => {
+                                        const typeInfo = RECYCLING_TYPES.find((t) => t.id === upload.recyclingType)
+                                        const pointsToShow = upload.pointsEarned ?? typeInfo?.points ?? 0
+
+
+                                        return (
+                                            <Card
+                                                key={upload.id}
+                                                className="overflow-hidden border border-border/40 bg-card/60 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                                            >
+                                                <CardHeader className="p-4 bg-gradient-to-r from-primary/10 to-accent/10">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            {typeInfo && (
+                                                                <Badge
+                                                                    className="text-sm px-3 py-1 bg-gradient-to-r text-white"
+                                                                    style={{
+                                                                        backgroundImage: `linear-gradient(to right, var(--${typeInfo?.color?.replace('from-', '').replace(' to-', ', var(--') || 'primary, accent'})`,
+                                                                    }}
+                                                                >
+                                                                    {typeInfo?.label}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+
+                                                        <Badge className="bg-gradient-to-r from-primary to-accent text-primary-foreground text-base px-4 py-2 shadow-md">
+                                                            <Sparkles className="h-4 w-4 mr-1" />
+                                                            +{pointsToShow} pts
+                                                        </Badge>
+                                                    </div>
+                                                </CardHeader>
+
+                                                <CardContent className="p-4 space-y-3">
+                                                    {upload.fileUrl && (
+                                                        <img
+                                                            src={upload.fileUrl}
+                                                            alt={upload.fileName}
+                                                            className="w-full h-40 object-cover rounded-lg shadow-md border border-border/30"
+                                                        />
+                                                    )}
+                                                    <div className="flex justify-between text-sm text-muted-foreground">
+                                                        <span>{upload.fileName}</span>
+                                                        <span>
+                                                            {new Date(upload.uploadedAt).toLocaleDateString("en-GB", {
+                                                                day: "2-digit",
+                                                                month: "2-digit",
+                                                                year: "2-digit",
+                                                            })}
+                                                        </span>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        )
+                                    })}
                                 </div>
-                                <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-4 py-2">
-                                    {data?.uploads?.length ?? 0} total uploads
-                                </Badge>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            {!data ? (
-                                <div className="text-center py-8 text-emerald-600">Loading your uploads...</div>
-                            ) : data.uploads.length === 0 ? (
-                                <div className="text-center py-8 text-emerald-600">No uploads yet. Start uploading to earn points!</div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {data.uploads.map((upload, index) => (
-                                        <motion.div
-                                            key={upload.id}
-                                            initial={{ opacity: 0, y: 10 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: index * 0.05 }}
-                                            className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border-2 border-emerald-100 hover:border-emerald-300 hover:shadow-md transition-all"
-                                        >
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md">
-                                                    <Recycle className="w-6 h-6 text-white" />
-                                                </div>
-                                                <div>
-                                                    <p className="font-semibold text-emerald-900">{upload.fileName}</p>
-                                                    <p className="text-sm text-emerald-600">{new Date(upload.uploadedAt).toLocaleString()}</p>
-                                                </div>
-                                            </div>
-                                            <Badge className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-2">
-                                                +10 pts
-                                            </Badge>
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                    )}
                 </motion.div>
             </main>
         </div>

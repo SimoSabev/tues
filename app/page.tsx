@@ -64,11 +64,11 @@ export default async function Page() {
                                                 variant="outline"
                                                 className="group relative overflow-hidden rounded-2xl px-8 py-6 md:px-12 md:py-8 text-lg md:text-xl font-bold transition-all duration-500 hover:scale-105 active:scale-95 w-full sm:w-auto min-w-[280px] border-2 border-white/30 hover:border-white/60 bg-white/5 backdrop-blur-xl hover:bg-white/10 shadow-xl"
                                             >
-                                <span
-                                    className="relative flex items-center justify-center gap-3 bg-gradient-to-r from-purple-300 to-blue-300 bg-clip-text text-transparent">
-                                    Sign In
-                                    <Play className="w-5 h-5 group-hover:scale-110 transition-transform duration-300"/>
-                                </span>
+                                                <span
+                                                    className="relative flex items-center justify-center gap-3 bg-gradient-to-r from-purple-300 to-blue-300 bg-clip-text text-transparent">
+                                                    Sign In
+                                                    <Play className="w-5 h-5 group-hover:scale-110 transition-transform duration-300"/>
+                                                </span>
                                             </Button>
                                         </SignInButton>
                                     </SignedOut>

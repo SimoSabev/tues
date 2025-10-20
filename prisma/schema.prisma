@@ -19,12 +19,14 @@ model User {
 }
 
 model Upload {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation("UserUploads", fields: [userId], references: [id], onDelete: Cascade)
-  fileUrl    String
-  fileName   String
-  fileType   String
-  fileSize   Int
-  uploadedAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation("UserUploads", fields: [userId], references: [id], onDelete: Cascade)
+  fileUrl       String
+  fileName      String
+  fileType      String
+  fileSize      Int
+  recyclingType String? // ← optional
+  pointsEarned  Int? // ← optional
+  uploadedAt    DateTime @default(now())
 }

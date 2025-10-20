@@ -13,10 +13,18 @@ export default function Page() {
             <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
                 <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                            <Recycle className="w-6 h-6 text-primary-foreground" />
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl">
+                                <Image
+                                    src="/sortex_logo.webp"
+                                    alt="Sortex Logo"
+                                    width={40}
+                                    height={40}
+                                    className="rounded-xl"
+                                />
+                            </div>
                         </div>
-                        <span className="text-xl font-bold">EcoRewards</span>
+                        <span className="text-xl font-bold">Sortex</span>
                     </div>
                     <div className="flex items-center gap-6">
                         <SignedOut>
@@ -341,7 +349,7 @@ export default function Page() {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
                         <div className="md:col-span-2 space-y-4">
                             <div className="flex items-center gap-2">
-                                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-full flex items-center justify-center">
                                     <div className="flex h-10 w-10 items-center justify-center rounded-xl">
                                         <Image
                                             src="/sortex_logo.webp"

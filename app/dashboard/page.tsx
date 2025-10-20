@@ -33,6 +33,8 @@ interface DashboardData {
         id: string
         fileName: string
         uploadedAt: string
+        pointsEarned: number
+        recyclingType: string // Updated from 'type' to 'recyclingType'
     }>
 }
 
@@ -333,8 +335,7 @@ export default function DashboardPage() {
                                                 </div>
                                             </div>
                                             <Badge className="bg-gradient-to-r from-primary to-accent text-primary-foreground text-base px-4 py-2 shadow-md">
-                                                <Sparkles className="h-4 w-4 mr-1" />
-                                                +10 pts
+                                                <Sparkles className="h-4 w-4 mr-1" />+{upload.pointsEarned ?? 0} pts
                                             </Badge>
                                         </motion.div>
                                     ))}

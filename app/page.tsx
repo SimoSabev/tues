@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ArrowRight, Leaf, Recycle, TrendingUp, Award, MapPin, Upload, BarChart3, Smartphone } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image";
 
 export default function Page() {
     return (
@@ -341,9 +342,17 @@ export default function Page() {
                         <div className="md:col-span-2 space-y-4">
                             <div className="flex items-center gap-2">
                                 <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                                    <Recycle className="w-6 h-6 text-primary-foreground" />
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-xl">
+                                        <Image
+                                            src="/sortex_logo.webp"
+                                            alt="Sortex Logo"
+                                            width={40}
+                                            height={40}
+                                            className="rounded-xl"
+                                        />
+                                    </div>
                                 </div>
-                                <span className="text-2xl font-bold">EcoRewards</span>
+                                <span className="text-2xl font-bold">Sortex</span>
                             </div>
                             <p className="text-muted-foreground max-w-md leading-relaxed">
                                 Making sustainability rewarding. Turn your recycling efforts into points, track your environmental

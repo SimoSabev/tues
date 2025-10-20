@@ -2,23 +2,25 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { usePathname } from "next/navigation"
-import { UserButton } from "@clerk/nextjs"
-import { Recycle } from "lucide-react"
-import { cn } from "@/lib/utils"
+import {usePathname} from "next/navigation"
+import {UserButton} from "@clerk/nextjs"
+import {Recycle} from "lucide-react"
+import {cn} from "@/lib/utils"
+import {ModeToggle} from "@/components/theme-toggle";
 
 export function AppHeader() {
     const pathname = usePathname()
 
     const navItems = [
-        { href: "/", label: "Dashboard" },
-        { href: "/map", label: "Map" },
-        { href: "/upload", label: "Upload" },
-        { href: "/leaderboard", label: "Leaderboard" },
+        {href: "/", label: "Dashboard"},
+        {href: "/map", label: "Map"},
+        {href: "/upload", label: "Upload"},
+        {href: "/leaderboard", label: "Leaderboard"},
     ]
 
     return (
-        <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <header
+            className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
             <div className="container mx-auto flex h-16 items-center justify-between px-4">
                 <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl">
@@ -53,14 +55,17 @@ export function AppHeader() {
                     ))}
                 </nav>
 
-                <UserButton
-                    appearance={{
-                        elements: {
-                            userButtonAvatarBox: "w-10 h-10 border-2 border-border",
-                            userButtonPopoverCard: "bg-card border border-border shadow-lg",
-                        },
-                    }}
-                />
+                <div className={"flex items-center gap-6"}>
+                    <ModeToggle/>
+                    <UserButton
+                        appearance={{
+                            elements: {
+                                userButtonAvatarBox: "w-10 h-10 border-2 border-border",
+                                userButtonPopoverCard: "bg-card border border-border shadow-lg",
+                            },
+                        }}
+                    />
+                </div>
             </div>
         </header>
     )

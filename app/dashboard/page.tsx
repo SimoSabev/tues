@@ -94,7 +94,7 @@ export default function DashboardPage() {
                                 </CardHeader>
                                 <CardContent>
                                     {isLoading ? (
-                                        <Skeleton className="h-14 bg-neutral-300 w-32 mb-2" />
+                                        <Skeleton className="h-14 bg-neutral-400 dark:bg-background w-32 mb-2" />
                                     ) : (
                                         <div className="text-5xl font-bold text-foreground mb-2">
                                             {userPoints !== undefined ? userPoints.toLocaleString() : "—"}
@@ -133,7 +133,7 @@ export default function DashboardPage() {
                                 </CardHeader>
                                 <CardContent>
                                     {isLoading ? (
-                                        <Skeleton className="h-14 bg-neutral-300 w-24 mb-2" />
+                                        <Skeleton className="h-14 bg-neutral-400 dark:bg-background w-24 mb-2" />
                                     ) : (
                                         <div className="text-5xl font-bold text-foreground mb-2">
                                             {userRank !== undefined ? `#${userRank}` : "—"}
@@ -172,7 +172,7 @@ export default function DashboardPage() {
                                 </CardHeader>
                                 <CardContent>
                                     {isLoading ? (
-                                        <Skeleton className="h-14 bg-neutral-300 w-20 mb-2" />
+                                        <Skeleton className="h-14 bg-neutral-400 dark:bg-background w-20 mb-2" />
                                     ) : (
                                         <div className="text-5xl font-bold text-foreground mb-2">
                                             {totalItems !== undefined ? totalItems : "—"}
